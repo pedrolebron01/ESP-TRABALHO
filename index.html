@@ -3,152 +3,140 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#121515">
-<meta name="description" content="Painel de controle e visualização 3D da Garra Hidráulica com ESP32.">
+<meta name="theme-color" content="#f3f5f2">
+<meta name="description" content="Controle da base e do ombro da garra hidráulica pelo Wi-Fi do ESP32.">
 <title>Garra Hidráulica • ESP32</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f7ad63'/%3E%3Cpath d='M6 25h12M11 25v-6l7-9m0 0 5-4m-5 4 1 5m4-9 4 1-1 4' fill='none' stroke='%23151515' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317644d'/%3E%3Cpath d='M6 25h12M11 25v-6l7-9m0 0 5-4m-5 4 1 5m4-9 4 1-1 4' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
-:root{color-scheme:dark;--bg:#121515;--panel:#1b1f20;--surface:#202527;--line:#353b3c;--fg:#f4f1eb;--sub:#aeb8b8;--accent:#ffb36b;--mint:#b5e4d5;--danger:#f7a59c;--mono:ui-monospace,"Cascadia Mono",Consolas,monospace}
+:root{color-scheme:light;--bg:#f3f5f2;--panel:#fff;--surface:#f7f9f6;--line:#dce5de;--fg:#192722;--sub:#4f6559;--accent:#17644d;--mint:#e2f1e9;--danger:#9f332e;--mono:ui-monospace,"Cascadia Mono",Consolas,monospace}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:radial-gradient(ellipse at 31% -4%,#34291e 0,transparent 36rem),var(--bg);color:var(--fg);font:1rem system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{margin:0;background:var(--bg);color:var(--fg);font:1rem system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button,input{font:inherit}
 button{color:inherit;cursor:pointer}
-button:focus-visible,a:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+button:focus-visible,a:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 a{color:inherit}
-button:disabled{opacity:.45;cursor:default}
-.shell{width:min(100% - 64px,1360px);margin-inline:auto}
-.topbar{border-bottom:1px solid #ffffff18}
+button:disabled{opacity:.5;cursor:default}
+.shell{width:min(100% - 64px,1180px);margin-inline:auto}
+.topbar{border-bottom:1px solid var(--line);background:#fafbf9}
 .topbar .shell,.toplinks,.brand{display:flex;align-items:center}
-.topbar .shell{min-height:67px;justify-content:space-between;gap:16px}
-.toplinks{gap:20px}
+.topbar .shell{min-height:62px;justify-content:space-between;gap:12px}
+.toplinks{gap:18px}
 .toplinks a{text-decoration:none;font-size:.86rem;font-weight:650;color:var(--sub)}
 .toplinks a:hover{color:var(--accent)}
-.brand{gap:11px;font-size:.82rem;font-weight:850;letter-spacing:.11em}
-.brand-logo{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:var(--accent);color:#1c1712}
-.brand-logo svg{width:22px;height:22px}
-.connection{display:flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid var(--line);border-radius:100px;color:var(--sub);font-size:.78rem;white-space:nowrap}
-.connection::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
-.connection[data-mode="preview"]{color:var(--accent)}
-.connection[data-mode="live"]{color:var(--mint)}
+.brand{gap:9px;font-size:.87rem;font-weight:760;letter-spacing:-.01em}
+.brand-logo{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--accent);color:#fff}
+.brand-logo svg{width:21px;height:21px}
+.connection{display:flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-radius:100px;background:#fff;color:var(--sub);font-size:.77rem;font-weight:650;white-space:nowrap}
+.connection::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.connection[data-mode="preview"],.connection[data-mode="live"]{color:var(--accent);background:#eaf4ec;border-color:#c9dfd1}
 .connection[data-mode="offline"]{color:var(--danger)}
-main{padding:38px 0 26px}
-.hero{margin-bottom:26px;animation:arrive .55s ease-out both}
-.eyebrow{display:flex;gap:9px;align-items:center;color:var(--accent);text-transform:uppercase;font:700 .74rem/1.4 var(--mono);letter-spacing:.15em}
-.eyebrow::before{content:"";display:block;width:18px;height:2px;background:var(--accent)}
+main{padding:38px 0 30px}
+.hero{margin-bottom:24px;animation:arrive .38s ease-out both}
+.eyebrow{color:var(--accent);text-transform:uppercase;font:700 .72rem/1.4 var(--mono);letter-spacing:.12em}
 h1,h2,h3,p{margin:0}
-h1{font-size:clamp(2.8rem,6vw,5.25rem);line-height:.99;letter-spacing:-.073em;margin:10px 0 13px}
-.hero p{max-width:660px;color:var(--sub);line-height:1.5}
-.dashboard{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(360px,1fr);align-items:stretch;gap:16px;animation:arrive .65s .07s ease-out both}
-@keyframes arrive{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
-.panel{overflow:hidden;border:1px solid var(--line);border-radius:19px;background:var(--panel)}
-.scene{position:relative;min-height:480px;background:radial-gradient(ellipse at 50% 42%,#36372e,#202624 65%,#171c1c);isolation:isolate}
+h1{font-size:clamp(2.25rem,5.7vw,4.55rem);line-height:1;letter-spacing:-.067em;margin:8px 0 10px;font-weight:760}
+.hero p{max-width:680px;color:var(--sub);line-height:1.5}
+.dashboard{display:grid;grid-template-columns:minmax(0,1.76fr) minmax(300px,1fr);align-items:stretch;gap:16px;animation:arrive .44s .04s ease-out both}
+@keyframes arrive{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.panel{overflow:hidden;border:1px solid var(--line);border-radius:17px;background:var(--panel);box-shadow:0 8px 28px #25463607}
+.scene{position:relative;min-height:438px;background:#e8eee8;isolation:isolate}
 .scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
 .scene canvas:active{cursor:grabbing}
-.scene-head,.scene-foot{position:absolute;left:21px;right:21px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
-.scene-head{top:19px}
-.scene-foot{bottom:17px;align-items:flex-end}
-.scene-title{font-size:1rem;font-weight:760;letter-spacing:-.01em}
-.scene-caption{font-size:.77rem;color:#c2cac6;margin-top:3px}
+.scene-head,.scene-foot{position:absolute;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.scene-head{top:16px}
+.scene-foot{bottom:14px;align-items:flex-end}
+.scene-title,.axis-legend,.view-hint{border:1px solid #cfdcd3;border-radius:8px;background:#f8fbf7ed}
+.scene-title{padding:7px 10px;font-size:.87rem;font-weight:740;letter-spacing:-.015em}
 .view-actions{display:flex;gap:6px;pointer-events:auto}
-.view-button{border:1px solid #ffffff32;background:#171c1bea;border-radius:8px;padding:7px 10px;min-height:33px;font-size:.75rem;font-weight:680;white-space:nowrap}
+.view-button{border:1px solid #cfdcd3;background:#f8fbf7ed;color:#29483c;border-radius:8px;padding:7px 9px;min-height:34px;font-size:.76rem;font-weight:690;white-space:nowrap}
 .view-button:hover{border-color:var(--accent);color:var(--accent)}
-.axis-legend{display:flex;align-items:center;gap:7px;font:600 .68rem var(--mono);color:#d1d9d2;text-shadow:0 2px 7px #000}
-.axis-legend::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
-.axis-legend.moving::before{box-shadow:0 0 9px 2px var(--accent);animation:pulse 1s ease-in-out infinite alternate}
-@keyframes pulse{to{opacity:.42}}
-.view-hint{font-size:.72rem;color:#d1d9d2;text-shadow:0 2px 8px #000;text-align:right}
+.axis-legend{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:.72rem;font-weight:650;color:var(--sub)}
+.axis-legend::before{content:"";width:6px;height:6px;border-radius:50%;background:#637b6d}
+.axis-legend.moving{color:var(--accent)}
+.axis-legend.moving::before{background:var(--accent);animation:pulse .85s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.35}}
+.view-hint{padding:5px 8px;font-size:.72rem;font-weight:650;color:var(--sub)}
 .graphics-error{position:absolute;inset:40% 12% auto;text-align:center;color:var(--sub)}
-.controls{padding:18px;display:flex;flex-direction:column;gap:11px}
-.controls h2,.info h2{font-size:1.24rem;letter-spacing:-.04em}
+.controls{padding:17px;display:flex;flex-direction:column;gap:10px}
+.controls h2,.info h2{font-size:1.16rem;letter-spacing:-.035em}
 .controls-hint{color:var(--sub);font-size:.82rem;margin-top:4px}
-.speed{display:grid;grid-template-columns:auto minmax(55px,1fr) auto;align-items:center;gap:12px;background:#161a1b;border:1px solid var(--line);border-radius:10px;padding:7px 11px;min-height:39px}
-.speed label{font-size:.8rem;font-weight:720}
+.speed{display:grid;grid-template-columns:auto minmax(55px,1fr) auto;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:40px}
+.speed label{font-size:.82rem;font-weight:700}
 .speed input{width:100%;min-width:0;margin:0;accent-color:var(--accent);cursor:pointer}
 .speed output{color:var(--accent);font:700 .82rem var(--mono);min-width:4ch;text-align:right}
-.motors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:1}
-.motor{min-width:0;padding:9px;background:var(--surface);border:1px solid var(--line);border-radius:11px;transition:border-color .22s,background .22s}
-.motor[data-state="move"]{border-color:#cb8e51;background:#302820}
-.motor[data-state="limit"]{border-color:#cb8e51}
-.motor-head{display:flex;align-items:center;gap:6px;min-height:25px}
-.motor-symbol{width:20px;height:20px;flex:none;display:grid;place-items:center;border-radius:5px;background:#ffb36b17;color:var(--accent);font:750 .79rem var(--mono)}
-.motor h3{font-size:.86rem;overflow-wrap:anywhere}
-.tag{display:flex;align-items:center;gap:5px;font-size:.69rem;color:var(--sub);margin:3px 0 8px;min-height:14px}
+.motors{display:grid;gap:8px;flex:1}
+.motor{min-width:0;padding:9px;background:var(--surface);border:1px solid var(--line);border-radius:11px;transition:border-color .2s,background .2s}
+.motor[data-state="move"]{border-color:#75ad93;background:#edf7f0}
+.motor[data-state="limit"]{border-color:#bb834b}
+.motor-head{display:flex;align-items:center;gap:7px;min-height:22px}
+.motor-symbol{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:6px;background:var(--mint);color:var(--accent);font:750 .85rem var(--mono)}
+.motor h3{font-size:.9rem}
+.tag{display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--sub);margin-left:auto;text-align:right}
 .tag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
-[data-state="move"] .tag,[data-state="limit"] .tag{color:var(--accent)}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.hold{border:1px solid #ffffff20;background:#181c1d;border-radius:7px;min-height:43px;padding:5px 2px;display:grid;justify-items:center;align-content:center;gap:2px;font-size:.7rem;font-weight:680;touch-action:none;user-select:none;-webkit-touch-callout:none;transition:background .15s,color .15s,transform .15s,border-color .15s}
+[data-state="move"] .tag{color:var(--accent)}
+[data-state="limit"] .tag{color:#874d19}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.hold{border:1px solid #d7e2da;background:#fff;border-radius:8px;min-height:43px;padding:5px 4px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:.8rem;font-weight:680;touch-action:none;user-select:none;-webkit-touch-callout:none;transition:background .15s,color .15s,transform .15s,border-color .15s}
 .hold:hover:not(:disabled){border-color:var(--accent)}
 .hold .direction{color:var(--accent);font-size:1rem;line-height:1}
-.hold.active,.hold.commanded{background:var(--accent);border-color:var(--accent);color:#24190f}
-.hold.active{transform:scale(.96)}
+.hold.active,.hold.commanded{background:var(--accent);border-color:var(--accent);color:#fff}
+.hold.active{transform:scale(.98)}
 .hold.active .direction,.hold.commanded .direction{color:inherit}
-.stop{width:100%;min-height:42px;border:1px solid #a85f5a;border-radius:9px;background:#392525;color:#ffd4cd;font-weight:780;font-size:.83rem;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .15s}
-.stop:hover{background:#52302d}
+.stop{width:100%;min-height:42px;border:1px solid #e9c4c0;border-radius:9px;background:#fff4f2;color:var(--danger);font-weight:760;font-size:.84rem;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .15s}
+.stop:hover{background:#fbe8e5}
 .stop:active{transform:scale(.98)}
-.stop::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--danger)}
-.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:14px;background:#171b1c}
-.stat{padding:14px 17px}
-.stat+.stat{border-left:1px solid var(--line)}
-.stat b{display:block;font-size:.91rem}
-.stat span{display:block;color:var(--sub);font-size:.73rem;margin-top:3px}
-.info{padding:23px 0 14px;scroll-margin:14px}
-.info h2{margin-bottom:11px}
+.stop::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor}
+.info{padding:23px 0 12px;scroll-margin:14px}
+.info h2{margin-bottom:10px}
 .info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.info article{padding:15px;line-height:1.47}
-.info article h3{font-size:.91rem;margin-bottom:5px}
+.info article{padding:14px;line-height:1.48}
+.info article h3{font-size:.9rem;margin-bottom:4px}
 .info article p,.info .model-note{color:var(--sub);font-size:.8rem}
-.info .model-note{margin-top:11px}
-@media(max-width:930px){.shell{width:min(100% - 34px,1360px)}.dashboard{grid-template-columns:minmax(0,1.22fr) minmax(320px,1fr)}.scene-head,.scene-foot{left:13px;right:13px}.controls{padding:13px}}
-@media(max-width:710px){.topbar .shell{min-height:54px}.toplinks a{display:none}main{padding-top:23px}.hero{margin-bottom:17px}h1{margin:6px 0 8px}.hero p{font-size:.88rem}.dashboard{display:flex;flex-direction:column;gap:10px}.scene{min-height:0;height:clamp(230px,43vh,390px)}.scene-head{top:11px}.scene-foot{bottom:10px}.scene-title{font-size:.9rem}.scene-caption{font-size:.68rem}.view-hint{display:none}.hero,.dashboard{animation:none}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:nth-child(3){border-left:0}.stat:nth-child(n+3){border-top:1px solid var(--line)}.info-grid{grid-template-columns:1fr}.motor{padding:8px}.hold{min-height:46px}}
-@media(max-width:370px){.shell{width:calc(100% - 22px)}.brand{letter-spacing:.04em}.view-button{padding-inline:6px;font-size:.67rem}.toplinks{gap:8px}}
+.info .model-note{margin-top:10px}
+@media(max-width:880px){.shell{width:calc(100% - 38px)}.dashboard{grid-template-columns:minmax(0,1.22fr) minmax(290px,1fr)}.scene-head,.scene-foot{left:11px;right:11px}.controls{padding:13px}}
+@media(max-width:680px){.shell{width:calc(100% - 26px)}.topbar .shell{min-height:52px}.toplinks a{display:none}main{padding-top:21px}.hero{margin-bottom:14px}h1{margin:5px 0 8px}.hero p{font-size:.88rem}.dashboard{display:flex;flex-direction:column;gap:10px}.scene{min-height:0;height:clamp(220px,37vh,350px)}.scene-head{top:10px}.scene-foot{bottom:9px}.scene-title,.view-button{padding-inline:6px;font-size:.72rem}.view-hint{display:none}.hold{min-height:44px}.hero,.dashboard{animation:none}.info-grid{grid-template-columns:1fr}.info{padding-top:17px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 <header class="topbar">
   <div class="shell">
-    <div class="brand"><span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h10m-6 0v-5l5-6m0 0 4-4 3 1-1 4m-2-5-1 7-3-3"/><circle cx="8" cy="15" r="1.5" fill="currentColor"/></svg></span>GARRA ESP</div>
+    <div class="brand"><span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h10m-6 0v-5l5-6m0 0 4-4 3 1-1 4m-2-5-1 7-3-3"/><circle cx="8" cy="15" r="1.5" fill="currentColor"/></svg></span>Garra ESP</div>
     <div class="toplinks"><a href="#projeto">Sobre o projeto</a><div id="connection" class="connection" role="status">Conectando…</div></div>
   </div>
 </header>
 <main class="shell">
   <header class="hero">
-    <div class="eyebrow">Projeto de robótica</div>
+    <div class="eyebrow">Projeto de robótica · ESP32</div>
     <h1>Garra hidráulica</h1>
-    <p>Controle a base, o ombro, o cotovelo e a garra pelo celular e acompanhe cada movimento no modelo 3D.</p>
+    <p>Controle a rotação da base e a altura do ombro pelo celular.</p>
   </header>
   <div class="dashboard">
     <section id="scene" class="scene panel" aria-labelledby="scene-title">
       <canvas id="model" aria-label="Modelo tridimensional interativo da garra hidráulica. Use as setas para girar a câmera." tabindex="0"></canvas>
       <p id="graphics-error" class="graphics-error" hidden>O 3D está indisponível neste navegador. Os controles continuam disponíveis.</p>
       <div class="scene-head">
-        <div><h2 id="scene-title" class="scene-title">Visualização 3D</h2><div class="scene-caption">Modelo do protótipo</div></div>
+        <h2 id="scene-title" class="scene-title">Modelo 3D</h2>
         <div class="view-actions"><button id="demo" class="view-button" type="button" hidden>Demonstração</button><button id="reset" class="view-button" type="button">Recentrar</button></div>
       </div>
-      <div class="scene-foot"><span id="activity" class="axis-legend">Aguardando movimento</span><span class="view-hint">Arraste para girar a câmera</span></div>
+      <div class="scene-foot"><span id="activity" class="axis-legend">Em repouso</span><span class="view-hint">Arraste para girar a câmera</span></div>
     </section>
     <section class="controls panel" aria-labelledby="control-title">
-      <div><h2 id="control-title">Controle dos eixos</h2><p class="controls-hint">Segure para mover. Solte para parar.</p></div>
+      <div><h2 id="control-title">Controle dos eixos</h2><p class="controls-hint">Segure para mover e solte para parar.</p></div>
       <div class="speed"><label for="speed">Velocidade</label><input id="speed" type="range" min="30" max="100" step="5" value="70" disabled><output id="percent" for="speed">70%</output></div>
       <div id="motors" class="motors"></div>
       <button id="stop" class="stop" type="button">Parar tudo</button>
     </section>
   </div>
-  <div class="summary panel" aria-label="Componentes do projeto">
-    <div class="stat"><b>ESP32 DevKit V1</b><span>Controle e rede Wi-Fi</span></div>
-    <div class="stat"><b>4 motores DC</b><span>Um para cada eixo</span></div>
-    <div class="stat"><b>2 módulos de ponte H</b><span>Invertem o sentido dos motores</span></div>
-    <div class="stat"><b>8 seringas com água</b><span>Quatro pares hidráulicos</span></div>
-  </div>
   <section id="projeto" class="info">
-    <h2>Como funciona o projeto</h2>
+    <h2>Sobre o projeto</h2>
     <div class="info-grid">
-      <article class="panel"><h3>Controle pelo celular</h3><p>O ESP32 cria a rede Garra-ESP-Lebron e serve o painel em <b>192.168.4.1</b>. A conexão é local e funciona sem internet.</p></article>
-      <article class="panel"><h3>Do comando ao motor</h3><p>O ESP32 envia sinais PWM para as pontes H, que controlam a velocidade e o sentido de rotação dos motores DC.</p></article>
-      <article class="panel"><h3>Da seringa à garra</h3><p>Quando um motor empurra ou puxa o êmbolo de uma seringa, a água na mangueira transmite o movimento à outra seringa do par.</p></article>
+      <article class="panel"><h3>ESP32 DevKit V1</h3><p>A placa cria a rede <b>Garra-ESP-Lebron</b> e abre o painel em <b>192.168.4.1</b>, sem internet.</p></article>
+      <article class="panel"><h3>Dois motores DC</h3><p>Uma ponte H controla os dois sentidos de rotação. Um motor gira a base e o outro sobe ou desce o ombro.</p></article>
+      <article class="panel"><h3>Seringas e água</h3><p>Os pares de seringas motorizados transmitem o movimento da base e do ombro pela água nas mangueiras.</p></article>
     </div>
-    <p class="model-note">A posição no 3D é estimada a partir dos comandos. O protótipo não mede o ângulo dos eixos.</p>
+    <p class="model-note">O 3D estima a posição a partir dos comandos. A placa não mede o ângulo dos eixos.</p>
   </section>
 </main>
 <script>
@@ -164,6 +152,7 @@ const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1
 const unit = a => mul(a, 1 / (Math.hypot(...a) || 1));
 const up = [0, 1, 0];
 const front = [0, 0, 1];
+const axisCount = 2;
 
 const shaders = {
   vertex: `
@@ -199,9 +188,9 @@ const shaders = {
         float line = 1.0-smoothstep(.008,.038,min(grid.x,grid.y));
         float fade = exp(-dot(p.xz,p.xz)*.085);
         vec2 base = (p.xz-vec2(-.18,0.0))/vec2(2.2,1.16);
-        vec2 controller = (p.xz-vec2(2.2,-.5))/vec2(1.22,1.0);
-        float shadow = exp(-3.0*dot(base,base))*.10 + exp(-2.0*dot(controller,controller))*.09;
-        vec3 ground = vec3(.077,.105,.102)+fade*vec3(.070,.067,.046)+line*fade*.086-shadow;
+        vec2 controller = (p.xz-vec2(1.91,-.45))/vec2(.82,.84);
+        float shadow = exp(-2.6*dot(base,base))*.19 + exp(-2.4*dot(controller,controller))*.15;
+        vec3 ground = vec3(.844,.885,.850)+fade*vec3(.092,.074,.075)-vec3(line*fade*.075+shadow);
         gl_FragColor = vec4(ground,1.0);
         return;
       }
@@ -243,7 +232,7 @@ function buildGraphics(canvas) {
   }
   const uniforms = Object.fromEntries(['Eye','Right','Up','Forward','Scale'].map(name => [name,gl.getUniformLocation(program,'u'+name)]));
   gl.enable(gl.DEPTH_TEST);
-  gl.clearColor(.085,.109,.108,1);
+  gl.clearColor(.844,.885,.85,1);
   return function draw(vertices, yaw, pitch) {
     const density = Math.min(devicePixelRatio || 1, 1.65);
     const width = Math.round(canvas.clientWidth*density);
@@ -254,12 +243,12 @@ function buildGraphics(canvas) {
     }
     const aspect = width/height;
     const distance = 7.45;
-    const target = [-.20,1.26,0];
+    const target = [-.30,1.18,0];
     const eye = add(target,[Math.cos(pitch)*Math.sin(yaw)*distance,Math.sin(pitch)*distance,Math.cos(pitch)*Math.cos(yaw)*distance]);
     const forward = unit(sub(target,eye));
     const right = unit(cross(forward,up));
     const vertical = cross(right,forward);
-    const scale = Math.min(2.92,aspect*2.38);
+    const scale = Math.min(2.78,aspect*2.63);
     gl.viewport(0,0,width,height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniform3fv(uniforms.Eye,eye);
@@ -273,10 +262,10 @@ function buildGraphics(canvas) {
 }
 
 const palette = {
-  rim:[.57,.32,.16], edge:[.62,.38,.22], wood:[.77,.50,.31], paint:[.89,.87,.78],
+  rim:[.55,.32,.20], edge:[.67,.44,.30], wood:[.80,.56,.36], paint:[.96,.93,.84],
   pin:[.68,.74,.75], cap:[.29,.35,.35], motor:[.37,.41,.40], base:[.21,.25,.24],
   rubber:[.13,.17,.16], hose:[.13,.43,.30], water:[.39,.72,.62], barrel:[.55,.65,.61],
-  green:[.35,.73,.50], amber:[1,.55,.21], board:[.19,.39,.31], metal:[.46,.49,.46],
+  green:[.29,.74,.48], amber:[.04,.58,.36], board:[.19,.39,.31], metal:[.46,.49,.46],
   mark:[.24,.36,.31]
 };
 
@@ -376,8 +365,8 @@ function makeMesh(pose, motion, time) {
   quad([-18,0,-18],[-18,0,18],[18,0,18],[18,0,-18],up,palette.base,4);
   box([-.40,.067,.25],[3.97,.13,2.12],palette.paint,1,[[1,0,0],front,up],palette.rim);
   box([-.40,.142,.25],[3.94,.025,2.09],palette.paint,0,[[1,0,0],front,up]);
-  box([2.12,.060,-.49],[1.89,.12,1.92],palette.paint,1,[[1,0,0],front,up],palette.rim);
-  box([2.12,.127,-.49],[1.86,.025,1.89],palette.paint,0,[[1,0,0],front,up]);
+  box([1.96,.060,-.53],[1.20,.12,1.84],palette.paint,1,[[1,0,0],front,up],palette.rim);
+  box([1.96,.127,-.53],[1.17,.025,1.81],palette.paint,0,[[1,0,0],front,up]);
 
   const pivot=[.18,0,.16];
   const swivel=pose[0];
@@ -391,7 +380,7 @@ function makeMesh(pose, motion, time) {
   const anchor=[.18,.32,.16], shoulder=[.035,1.22,.16];
   const angle=pose[1];
   const elbow=add(shoulder,[-Math.cos(angle)*.92,Math.sin(angle)*.92,0]);
-  const angle2=angle+pose[2];
+  const angle2=angle-1.16;
   const wrist=add(elbow,[-Math.cos(angle2)*1.21,Math.sin(angle2)*1.21,0]);
   for(const z of [-.205,.205]){
     const offset=[0,0,z];
@@ -399,25 +388,23 @@ function makeMesh(pose, motion, time) {
     plate(add(shoulder,offset),add(elbow,offset),.31,.095);
     plate(add(elbow,offset),add(wrist,offset),.30,.095);
   }
-  joint(anchor,.106,.49,motion[0]); joint(shoulder,.123,.54,motion[1]); joint(elbow,.12,.54,motion[2]); joint(wrist,.089,.47,motion[3]);
+  joint(anchor,.106,.49,motion[0]); joint(shoulder,.123,.54,motion[1]); joint(elbow,.12,.54); joint(wrist,.089,.47);
   const handAngle=angle2*.32-.10;
   const grip=add(wrist,[-.24*Math.cos(handAngle),.24*Math.sin(handAngle),0]);
   plate(wrist,grip,.24,.33,palette.wood);
   for(const side of [-1,1]){
     const a=add(grip,[0,0,side*.15]);
-    const jawAngle=pose[3];
+    const jawAngle=.46;
     const b=add(a,[-.37*Math.cos(jawAngle),.035,side*.37*Math.sin(jawAngle)]);
     const tip=add(b,[-.21,.045,-side*.072]);
     plate(a,b,.13,.10,palette.paint);
     plate(b,tip,.115,.10,palette.paint);
-    box(tip,[.13,.13,.14],motion[3] ? palette.amber : palette.rubber,2);
+    box(tip,[.13,.13,.14],palette.rubber,2);
     cylinder(add(a,[0,-.05,0]),add(a,[0,.09,0]),.054,palette.pin,0,8);
   }
   const waterStarts=[
     syringe([.60,.39,.16],[-.08,.47,.16],motion[0],.87),
-    syringe([.34,.54,.16],mix(shoulder,elbow,.69),motion[1],1.05),
-    syringe(add(shoulder,[.09,.13,.16]),add(mix(elbow,wrist,.57),[0,.14,.16]),motion[2],.90),
-    syringe(add(mix(elbow,wrist,.36),[.08,.135,0]),add(grip,[0,.12,0]),motion[3],.77)
+    syringe([.34,.54,.16],mix(shoulder,elbow,.69),motion[1],1.05)
   ];
   function rotate(p, normal=false){
     const [x,y,z]=normal?p:sub(p,pivot);
@@ -431,8 +418,8 @@ function makeMesh(pose, motion, time) {
       vertices[i+j]=p[j]; vertices[i+3+j]=n[j];
     }
   }
-  for(let i=0;i<4;i++){
-    const x=1.42+i*.4;
+  for(let i=0;i<axisCount;i++){
+    const x=1.64+i*.46;
     const axis=mechanisms[i];
     const travel=(pose[i]-axis.min)/(axis.max-axis.min)-.5;
     const head=[x,.24,.17], tail=[x,.57+travel*.12,-.81+travel*.23];
@@ -446,21 +433,19 @@ function makeMesh(pose, motion, time) {
     const c2=add(end,[-.30,.10,.75-i*.13]);
     tube(origin,c1,c2,end,motion[i],i*.21);
   }
-  box([2.54,.20,-1.22],[.51,.046,.38],palette.board,0,[[1,0,0],front,up]);
-  box([2.54,.236,-1.23],[.24,.033,.21],palette.metal);
-  box([2.69,.234,-1.17],[.07,.03,.09],palette.rubber);
-  box([2.37,.235,-1.16],[.05,.034,.05],palette.green,3);
+  box([1.99,.20,-1.14],[.51,.046,.38],palette.board,0,[[1,0,0],front,up]);
+  box([1.99,.236,-1.15],[.24,.033,.21],palette.metal);
+  box([2.14,.234,-1.09],[.07,.03,.09],palette.rubber);
+  box([1.82,.235,-1.08],[.05,.034,.05],palette.green,3);
   return new Float32Array(vertices);
 }
 
 const mechanisms = [
   {name:'Base', labels:['Esquerda','Direita'], arrows:['←','→'], symbol:'↔', min:-.88,max:.88,rate:1.02,direction:1},
-  {name:'Ombro', labels:['Desce','Sobe'], arrows:['↓','↑'], symbol:'↕', min:.24,max:1.52,rate:.85,direction:1},
-  {name:'Cotovelo', labels:['Recolhe','Estica'], arrows:['↶','↷'], symbol:'∠', min:-1.78,max:-.16,rate:1.15,direction:1},
-  {name:'Garra', labels:['Abre','Fecha'], arrows:['↔','→←'], symbol:'⋔', min:.06,max:.88,rate:1.34,direction:-1}
+  {name:'Ombro', labels:['Desce','Sobe'], arrows:['↓','↑'], symbol:'↕', min:.24,max:1.52,rate:.85,direction:1}
 ];
-const pose = [0,.96,-1.16,.46];
-const visualMotion = [0,0,0,0];
+const pose = [0,.96];
+const visualMotion = [0,0];
 const held = new Map();
 const released = new Set();
 const connection = byId('connection');
@@ -486,7 +471,7 @@ let sceneDirty = true;
 const cards = mechanisms.map(({name,labels,arrows,symbol},index)=>{
   const card = document.createElement('article');
   card.className = 'motor';
-  card.innerHTML = '<header class="motor-head"><span class="motor-symbol" aria-hidden="true"></span><h3></h3></header><p class="tag"></p><div class="actions"></div>';
+  card.innerHTML = '<header class="motor-head"><span class="motor-symbol" aria-hidden="true"></span><h3></h3><p class="tag"></p></header><div class="actions"></div>';
   card.querySelector('.motor-symbol').textContent = symbol;
   const title=card.querySelector('h3');
   const tag=card.querySelector('.tag');
@@ -599,7 +584,7 @@ function render(){
     buttons[1].lastElementChild.textContent=axis.p;
     if(visualMotion[index]) activeNames.push(axis.n);
   });
-  activity.textContent=activeNames.length ? activeNames.join(' + ')+' em movimento' : 'Aguardando movimento';
+  activity.textContent=activeNames.length ? activeNames.join(' + ')+' em movimento' : 'Em repouso';
   activity.classList.toggle('moving',activeNames.length>0);
   speed.disabled=!currentState;
   if(currentState && pendingSpeed===null && speedInFlight===null) speed.value=currentState.v;
@@ -657,11 +642,11 @@ async function send(){
       });
       if(!response.ok) throw new Error('Falha de conexão');
       const result=await response.json();
-      if(!Number.isFinite(result.v) || !Array.isArray(result.j) ||
-         !result.j.every(axis=>axis && [-1,0,1].includes(axis.d) && typeof axis.n==='string' && typeof axis.m==='string' && typeof axis.p==='string')){
+      if(!Number.isFinite(result.v) || !Array.isArray(result.j) || result.j.length<axisCount ||
+         !result.j.slice(0,axisCount).every(axis=>axis && [-1,0,1].includes(axis.d) && typeof axis.n==='string' && typeof axis.m==='string' && typeof axis.p==='string')){
         throw new Error('Estado do ESP32 inválido');
       }
-      currentState=result;
+      currentState={v:result.v,j:result.j.slice(0,axisCount)};
     }
     everConnected=true;
     if(sendingStop) stopPending=false;
@@ -696,12 +681,11 @@ setInterval(()=>{
 },125);
 
 const routine=[
-  [1050,[[0,-1],[1,1],[3,-1]]],
-  [1050,[[0,1],[2,1]]],
-  [750,[[3,1]]],
-  [980,[[0,1],[1,-1]]],
-  [900,[[2,-1],[3,-1]]],
-  [650,[[0,-1],[1,1],[3,1]]]
+  [980,[[0,-1],[1,1]]],
+  [1120,[[0,1]]],
+  [1220,[[1,-1]]],
+  [400,[]],
+  [650,[[0,-1],[1,1]]]
 ];
 function animateDemo(now){
   if(demoStart===null) return;
