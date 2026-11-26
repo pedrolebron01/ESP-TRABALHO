@@ -4,7 +4,7 @@
 //
 //  NÃO PRECISA DE NENHUMA BIBLIOTECA EXTRA: usa só o que já vem
 //  com o suporte ao ESP32 na Arduino IDE (WiFi, WebServer e LEDC).
-//  Painel integrado. Configure WifiLocal.h a partir de WifiLocal.exemplo.h.
+//  Painel integrado. Preencha WIFI_SENHA antes de gravar.
 //
 //  Funciona com ponte H L298N, L9110S, TB6612 ou parecidas
 //  (2 entradas por motor). No L298N, deixe os jumpers ENA/ENB.
@@ -21,7 +21,12 @@
 // ============================================================
 #include <WiFi.h>
 #include <WebServer.h>
-#include "WifiLocal.h"
+// Troque pelo valor da senha do Wi-Fi da sua garra.
+#define WIFI_SENHA "SUA_SENHA_AQUI"
+static_assert(sizeof(WIFI_SENHA) >= 9 && sizeof(WIFI_SENHA) <= 64,
+              "Use uma senha de 8 a 63 caracteres.");
+static_assert(__builtin_strcmp(WIFI_SENHA, "SUA_SENHA_AQUI") != 0,
+              "Preencha WIFI_SENHA com a senha da sua garra antes de gravar.");
 #if __has_include(<esp_arduino_version.h>)
 #include <esp_arduino_version.h>
 #endif
