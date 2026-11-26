@@ -42,6 +42,9 @@ h1{font-size:clamp(2.25rem,5.7vw,4.55rem);line-height:1;letter-spacing:-.067em;m
 .panel{overflow:hidden;border:1px solid var(--line);border-radius:17px;background:var(--panel);box-shadow:0 8px 28px #25463607}
 .scene{position:relative;min-height:438px;background:#e8eee8;isolation:isolate}
 .scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+.scene .model-software{pointer-events:none}
+.initial-model{position:absolute;inset:10% 0 8%;width:100%;height:82%;pointer-events:none}
+.scene [hidden]{display:none}
 .scene canvas:active{cursor:grabbing}
 .scene-head,.scene-foot{position:absolute;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
 .scene-head{top:16px}
@@ -114,8 +117,19 @@ h1{font-size:clamp(2.25rem,5.7vw,4.55rem);line-height:1;letter-spacing:-.067em;m
   </header>
   <div class="dashboard">
     <section id="scene" class="scene panel" aria-labelledby="scene-title">
+      <svg id="initial-model" class="initial-model" viewBox="0 0 460 290" aria-hidden="true">
+        <path fill="#cab294" d="M80 227l159-26 145 44-158 30z"/>
+        <ellipse cx="246" cy="221" rx="42" ry="13" fill="#3d6255"/>
+        <path d="M245 218l-7-77-59-60-87 55" fill="none" stroke="#957452" stroke-width="20" stroke-linejoin="round"/>
+        <path d="M245 211l-7-70-59-60-87 55" fill="none" stroke="#f0e3cd" stroke-width="14" stroke-linejoin="round"/>
+        <path d="M92 136l-28 6-14 19m42-25l-22-6-20 11" fill="none" stroke="#3d6255" stroke-width="7" stroke-linecap="round"/>
+        <path d="M252 196l-9-44" stroke="#68a794" stroke-width="10" stroke-linecap="round"/>
+        <path d="M252 196q25 57 72 31" fill="none" stroke="#43836b" stroke-width="4"/>
+        <g fill="#3d6255"><circle cx="245" cy="211" r="5"/><circle cx="238" cy="141" r="5"/><circle cx="179" cy="81" r="5"/></g>
+      </svg>
+      <canvas id="model-software" class="model-software" aria-hidden="true" hidden></canvas>
       <canvas id="model" aria-label="Modelo tridimensional interativo da garra hidráulica. Use as setas para girar a câmera." tabindex="0"></canvas>
-      <p id="graphics-error" class="graphics-error" hidden>O 3D está indisponível neste navegador. Os controles continuam disponíveis.</p>
+      <p id="graphics-error" class="graphics-error" hidden>Visualização estática. Os controles continuam disponíveis.</p>
       <div class="scene-head">
         <h2 id="scene-title" class="scene-title">Modelo 3D</h2>
         <div class="view-actions"><button id="demo" class="view-button" type="button" hidden>Demonstração</button><button id="reset" class="view-button" type="button">Recentrar</button></div>
@@ -237,7 +251,7 @@ function buildGraphics(canvas) {
     const density = Math.min(devicePixelRatio || 1, 1.65);
     const width = Math.round(canvas.clientWidth*density);
     const height = Math.round(canvas.clientHeight*density);
-    if (!width || !height) return;
+    if (!width || !height) return false;
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width=width; canvas.height=height;
     }
@@ -261,6 +275,67 @@ function buildGraphics(canvas) {
   };
 }
 
+// Desenha a mesma geometria em Canvas 2D se o WebGL não estiver disponível.
+function buildSoftwareGraphics(surface) {
+  const ctx = surface.getContext('2d');
+  if (!ctx) return null;
+  const light = unit([-.54,.84,.42]);
+  return (vertices, yaw, pitch) => {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return false;
+    const density = Math.min(devicePixelRatio || 1,1.35);
+    const width = Math.round(w*density), height = Math.round(h*density);
+    if (surface.width !== width || surface.height !== height) {
+      surface.width=width; surface.height=height;
+    }
+    ctx.setTransform(density,0,0,density,0,0);
+    ctx.clearRect(0,0,w,h);
+    const target=[-.30,1.18,0];
+    const eye=add(target,[Math.cos(pitch)*Math.sin(yaw)*7.45,Math.sin(pitch)*7.45,Math.cos(pitch)*Math.cos(yaw)*7.45]);
+    const forward=unit(sub(target,eye)), right=unit(cross(forward,up)), vertical=cross(right,forward);
+    const scale=Math.min(2.78,w/h*2.63)*h/2;
+    const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+    function project(x,y,z){
+      const d=[x-eye[0],y-eye[1],z-eye[2]], depth=dot(d,forward);
+      return [w/2+scale*dot(d,right)/depth,h/2-scale*dot(d,vertical)/depth,depth];
+    }
+    function path(points){
+      ctx.beginPath();
+      ctx.moveTo(points[0][0],points[0][1]);
+      for(let i=1;i<points.length;i++) ctx.lineTo(points[i][0],points[i][1]);
+    }
+    ctx.strokeStyle='#cadbce';
+    ctx.lineWidth=1;
+    for(let i=-5;i<=5;i++){
+      const n=i*.5;
+      path([project(n,0,-2.5),project(n,0,2.5)]); ctx.stroke();
+      path([project(-2.5,0,n),project(2.5,0,n)]); ctx.stroke();
+    }
+    const faces=[];
+    for(let i=0;i<vertices.length;i+=30){
+      const v=vertices, material=v[i+9];
+      if(material>3.5) continue;
+      const normal=[v[i+3]+v[i+13]+v[i+23],v[i+4]+v[i+14]+v[i+24],v[i+5]+v[i+15]+v[i+25]];
+      if(dot(normal,[eye[0]-v[i],eye[1]-v[i+1],eye[2]-v[i+2]])<=0) continue;
+      const points=[i,i+10,i+20].map(j=>project(v[j],v[j+1],v[j+2]));
+      if(points.some(point=>point[2]<=.15)) continue;
+      const shade=material>2.5?.98:.64+.40*Math.max(0,dot(unit(normal),light));
+      const color=[v[i+6],v[i+7],v[i+8]].map(c=>Math.round(clamp(c*shade,0,1)*255));
+      faces.push({points,depth:points.reduce((sum,p)=>sum+p[2],0),color:'rgb('+color.join(',')+')'});
+    }
+    faces.sort((a,b)=>b.depth-a.depth);
+    ctx.lineWidth=.6;
+    for(const face of faces){
+      path(face.points);
+      ctx.closePath();
+      ctx.fillStyle=ctx.strokeStyle=face.color;
+      ctx.fill();
+      ctx.stroke();
+    }
+    return true;
+  };
+}
+
 const palette = {
   rim:[.55,.32,.20], edge:[.67,.44,.30], wood:[.80,.56,.36], paint:[.96,.93,.84],
   pin:[.68,.74,.75], cap:[.29,.35,.35], motor:[.37,.41,.40], base:[.21,.25,.24],
@@ -269,7 +344,7 @@ const palette = {
   mark:[.24,.36,.31]
 };
 
-function makeMesh(pose, motion, time) {
+function makeMesh(pose, motion, time, simple=false) {
   const vertices = [];
   function vertex(p, n, color, material) {
     vertices.push(p[0],p[1],p[2],n[0],n[1],n[2],color[0],color[1],color[2],material);
@@ -292,6 +367,7 @@ function makeMesh(pose, motion, time) {
     }
   }
   function cylinder(a,b,radius,color,material=0,sides=12,capped=true) {
+    if(simple) sides=Math.min(sides,6);
     const axis = unit(sub(b,a));
     const tangent = unit(cross(axis,Math.abs(axis[1])<.88 ? up : front));
     const bitangent = cross(axis,tangent);
@@ -351,8 +427,9 @@ function makeMesh(pose, motion, time) {
     }
     const color=active ? [.24,.60,.39] : palette.hose;
     let old=at(0);
-    for(let i=1;i<=17;i++){
-      const p=at(i/17);
+    const segments=simple?8:17;
+    for(let i=1;i<=segments;i++){
+      const p=at(i/segments);
       cylinder(old,p,.025,color,2,7,false);
       old=p;
     }
@@ -617,6 +694,20 @@ function simulate(commands){
   return simulated;
 }
 
+function consultarPlaca(commands){
+  return new Promise((resolve,reject)=>{
+    const req=new XMLHttpRequest();
+    req.open('GET','/cmd?c='+encodeURIComponent(commands.join(';')),true);
+    req.timeout=700;
+    req.onload=()=>{
+      if(req.status!==200){reject(new Error('HTTP '+req.status));return;}
+      try{resolve(JSON.parse(req.responseText));}catch(error){reject(error);}
+    };
+    req.onerror=req.ontimeout=req.onabort=()=>reject(new Error('Sem resposta do ESP32'));
+    req.send();
+  });
+}
+
 async function send(){
   if(busy){dirty=true;return;}
   busy=true;
@@ -631,17 +722,11 @@ async function send(){
     for(const [index,press] of held) commands.push('m,'+index+','+press.direction);
   }
   if(!commands.length) commands.push('p');
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),700);
   try{
     if(preview){
       currentState=simulate(commands);
     }else{
-      const response=await fetch('/cmd?c='+encodeURIComponent(commands.join(';')),{
-        cache:'no-store',signal:controller.signal,keepalive:sendingStop
-      });
-      if(!response.ok) throw new Error('Falha de conexão');
-      const result=await response.json();
+      const result=await consultarPlaca(commands);
       if(!Number.isFinite(result.v) || !Array.isArray(result.j) || result.j.length<axisCount ||
          !result.j.slice(0,axisCount).every(axis=>axis && [-1,0,1].includes(axis.d) && typeof axis.n==='string' && typeof axis.m==='string' && typeof axis.p==='string')){
         throw new Error('Estado do ESP32 inválido');
@@ -658,7 +743,6 @@ async function send(){
     connection.textContent='ESP32 desconectado';
     everConnected=true;
   }finally{
-    clearTimeout(timeout);
     speedInFlight=null;
     render();
     busy=false;
@@ -715,22 +799,32 @@ let mesh=null;
 let previous=0;
 let lastDraw=0;
 let needsMesh=true;
-try{draw=buildGraphics(canvas);}catch{showGraphicsError();}
-canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();draw=null;showGraphicsError();});
-canvas.addEventListener('webglcontextrestored',()=>{
-  try{
-    draw=buildGraphics(canvas);
-    sceneDirty=true;
-    reset.disabled=false;
-    demo.hidden=!preview;
-    byId('graphics-error').hidden=true;
-  }catch{showGraphicsError();}
-});
-function showGraphicsError(){
-  byId('graphics-error').hidden=false;
-  reset.disabled=true;
-  demo.hidden=true;
+const fallbackCanvas=byId('model-software');
+const initialModel=byId('initial-model');
+let software=false;
+function selectRenderer(forceSoftware=false){
+  draw=null;
+  software=forceSoftware;
+  if(!software){
+    try{draw=buildGraphics(canvas);}catch{software=true;}
+  }
+  if(software){
+    try{draw=buildSoftwareGraphics(fallbackCanvas);}catch{draw=null;}
+  }
+  canvas.style.opacity=software?'0':'1';
+  fallbackCanvas.hidden=!(software && draw);
+  byId('graphics-error').hidden=Boolean(draw);
+  reset.disabled=!draw;
+  demo.hidden=!preview || !draw;
+  needsMesh=true;
+  sceneDirty=true;
 }
+selectRenderer();
+canvas.addEventListener('webglcontextlost',event=>{
+  event.preventDefault();
+  selectRenderer(true);
+});
+canvas.addEventListener('webglcontextrestored',()=>selectRenderer());
 demo.hidden=!preview || !draw;
 demo.addEventListener('click',()=>{
   if(!preview || !draw) return;
@@ -772,7 +866,7 @@ else window.addEventListener('resize',()=>{sceneDirty=true;});
 let lastMotion='';
 function frame(now){
   requestAnimationFrame(frame);
-  if(document.hidden || now-lastDraw<25) return;
+  if(document.hidden || now-lastDraw<(software?55:25)) return;
   lastDraw=now;
   animateDemo(now);
   const delta=previous ? clamp((now-previous)/1000,0,.06) : 0;
@@ -792,19 +886,29 @@ function frame(now){
   if(!draw) return;
   const motionKey=visualMotion.join(',');
   if(needsMesh || motionKey!==lastMotion || visualMotion.some(Boolean)){
-    mesh=makeMesh(pose,visualMotion,now/1000);
+    mesh=makeMesh(pose,visualMotion,now/1000,software);
     lastMotion=motionKey;
     needsMesh=false;
     sceneDirty=true;
   }
   if(sceneDirty && mesh){
-    draw(mesh,camera[0],camera[1]);
-    sceneDirty=false;
+    try{
+      if(draw(mesh,camera[0],camera[1])!==false) initialModel.hidden=true;
+      sceneDirty=false;
+    }catch{
+      if(!software) selectRenderer(true);
+      else{
+        draw=null;
+        fallbackCanvas.hidden=true;
+        initialModel.hidden=false;
+        byId('graphics-error').hidden=false;
+      }
+    }
   }
 }
 render();
-send();
 requestAnimationFrame(frame);
+send();
 </script>
 </body>
 </html>
